@@ -1,0 +1,141 @@
+# DocSort AI — Основные настройки
+# ================================
+
+general:
+  # Язык OCR (rus — русский, eng — английский)
+  language: "rus+eng"
+  # Уровень логирования: DEBUG, INFO, WARNING, ERROR
+  log_level: "INFO"
+  # Директория для логов
+  log_dir: "logs"
+  # Максимальное количество потоков обработки
+  max_workers: 4
+
+# Настройки сборщиков документов
+collectors:
+  # IMAP-сборщик электронной почты
+  email:
+    enabled: false
+    host: "imap.example.com"
+    port: 993
+    use_ssl: true
+    username: ""
+    password: ""
+    folder: "INBOX"
+    # Интервал проверки почты (секунды)
+    poll_interval: 60
+    # Фильтр по расширениям вложений
+    allowed_extensions:
+      - ".pdf"
+      - ".tif"
+      - ".tiff"
+      - ".png"
+      - ".jpg"
+      - ".jpeg"
+
+  # Наблюдатель за папкой
+  folder_watcher:
+    enabled: true
+    # Директория для наблюдения
+    watch_dir: "data/inbox"
+    # Рекурсивное наблюдение
+    recursive: false
+    # Расширения файлов
+    allowed_extensions:
+      - ".pdf"
+      - ".tif"
+      - ".tiff"
+      - ".png"
+      - ".jpg"
+      - ".jpeg"
+
+# Настройки OCR
+ocr:
+  engine: "tesseract"
+  # Путь к бинарнику Tesseract (если не в PATH)
+  tesseract_cmd: ""
+  # Языки: rus, eng, rus+eng
+  languages: "rus+eng"
+  # DPI для конвертации PDF в изображение
+  dpi: 300
+  # PSM-режим Tesseract (6 — блок текста, 3 — авто)
+  psm: 6
+
+# Предобработка изображений
+preprocessing:
+  # Автоматическое выравнивание (deskew)
+  deskew: true
+  # Удаление шума
+  denoise: true
+  # Бинаризация (порог Otsu)
+  binarize: true
+  # Контраст (CLAHE)
+  enhance_contrast: true
+  # Целевой DPI
+  target_dpi: 300
+
+# Классификация
+classification:
+  # Активный классификатор: rules, ml, neural, llm, hybrid
+  active_classifier: "hybrid"
+  # Порог уверенности для автоматической сортировки
+  auto_sort_threshold: 0.85
+  # Порог для передачи на следующий уровень каскада
+  cascade_threshold: 0.7
+
+  # Вариант A: Правила
+  rules:
+    enabled: true
+
+  # Вариант B: ML (TF-IDF + SVM)
+  ml:
+    enabled: true
+    model_path: "models/tfidf_svm.pkl"
+    # Минимум документов для обучения
+    min_training_samples: 50
+
+  # Вариант C: Нейросети
+  neural:
+    enabled: false
+    visual_model_path: "models/mobilenet_v3.onnx"
+    text_model: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+
+  # Вариант D: LLM
+  llm:
+    enabled: false
+    # URL Ollama API
+    ollama_url: "http://localhost:11434"
+    model: "qwen2.5:3b"
+    # Таймаут запроса (секунды)
+    timeout: 120
+
+# Сортировка файлов
+sorting:
+  # Базовая директория для отсортированных документов
+  output_dir: "data/sorted"
+  # Шаблон имени файла: {date}_{type}_{original}
+  filename_template: "{date}_{doc_type}_{original_name}"
+  # Создавать подпапки по типу документа
+  create_type_dirs: true
+  # Создавать подпапки по дате
+  create_date_dirs: true
+
+# Обратная связь и обучение
+feedback:
+  # Путь к базе данных обратной связи
+  db_path: "data/feedback.db"
+  # Автоматическое переобучение после N подтверждений
+  retrain_threshold: 20
+  # Хранить историю классификаций
+  store_history: true
+
+# FastAPI сервер
+api:
+  host: "0.0.0.0"
+  port: 8000
+  # Максимальный размер загружаемого файла (байт, 50 MB)
+  max_upload_size: 52428800
+
+# Streamlit UI
+ui:
+  port: 8501

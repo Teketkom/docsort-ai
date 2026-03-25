@@ -1,0 +1,90 @@
+version: "3.9"
+
+services:
+  # API-сервер DocSort AI
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: docsort-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./config:/app/config
+      - ./logs:/app/logs
+    environment:
+      - PYTHONPATH=/app/src
+      - DOCSORT_CONFIG=/app/config/settings.yaml
+    command: >
+      python -m uvicorn api.server:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/api/v1/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Streamlit UI
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: docsort-ui
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+    environment:
+      - PYTHONPATH=/app/src
+      - DOCSORT_API_URL=http://api:8000
+    command: >
+      python -m streamlit run src/ui/streamlit_app.py
+      --server.port 8501
+      --server.address 0.0.0.0
+      --server.headless true
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Наблюдатель за папкой (сборщик документов)
+  watcher:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: docsort-watcher
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./config:/app/config
+      - ./logs:/app/logs
+    environment:
+      - PYTHONPATH=/app/src
+      - DOCSORT_CONFIG=/app/config/settings.yaml
+    command: >
+      python -m core.pipeline
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Ollama LLM (опционально, для Варианта D)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: docsort-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    profiles:
+      - llm
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
